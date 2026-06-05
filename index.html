@@ -13,7 +13,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
   <style>
-    /* ── Reset & Tokens ─────────────────────────────────────────────────── */
+    /* ── Tokens ─────────────────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       --bg:        #0a0a0f;
@@ -32,197 +32,177 @@
       --shadow:    0 4px 24px rgba(0,0,0,.4);
       --shadow-lg: 0 12px 48px rgba(0,0,0,.6);
       --nav-h:     64px;
-      --stats-h:   72px;
       --transition: .2s cubic-bezier(.4,0,.2,1);
     }
     [data-theme="light"] {
-      --bg:      #f8f9fc;
-      --card:    #ffffff;
-      --border:  #e2e8f0;
-      --surface: #f1f5f9;
-      --text:    #1a1a2e;
-      --muted:   #64748b;
-      --dim:     #94a3b8;
-      --shadow:  0 4px 24px rgba(0,0,0,.08);
+      --bg:        #f8f9fc;
+      --card:      #ffffff;
+      --border:    #e2e8f0;
+      --surface:   #f1f5f9;
+      --text:      #1a1a2e;
+      --muted:     #64748b;
+      --dim:       #94a3b8;
+      --shadow:    0 4px 24px rgba(0,0,0,.08);
       --shadow-lg: 0 12px 48px rgba(0,0,0,.16);
     }
-
     html { scroll-behavior: smooth; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
+      background: var(--bg); color: var(--text);
       min-height: 100dvh;
       transition: background var(--transition), color var(--transition);
       overflow-x: hidden;
     }
-
-    /* ── Scrollbar ─────────────────────────────────────────────────────── */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--dim); border-radius: 99px; }
 
-    /* ── Navbar ────────────────────────────────────────────────────────── */
+    /* ── Navbar ─────────────────────────────────────────────────────────── */
     .nav {
       position: sticky; top: 0; z-index: 100;
       height: var(--nav-h);
       display: flex; align-items: center; justify-content: space-between;
       padding: 0 24px;
-      background: rgba(10,10,15,.85);
+      background: rgba(10,10,15,.88);
       backdrop-filter: blur(20px);
       border-bottom: 1px solid var(--border);
       transition: background var(--transition), border-color var(--transition);
     }
-    [data-theme="light"] .nav { background: rgba(248,249,252,.85); }
+    [data-theme="light"] .nav { background: rgba(248,249,252,.88); }
     .nav-logo {
       display: flex; align-items: center; gap: 10px;
       font-weight: 700; font-size: 18px; letter-spacing: -.3px;
     }
-    .nav-logo .icon {
-      width: 32px; height: 32px;
+    .nav-logo-mark {
+      width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
       background: linear-gradient(135deg, var(--green), var(--blue));
-      border-radius: 8px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 16px;
     }
-    .nav-right { display: flex; align-items: center; gap: 16px; }
+    .nav-logo-mark svg { width: 18px; height: 18px; color: #fff; }
+    .nav-right { display: flex; align-items: center; gap: 12px; }
     .live-badge {
       display: flex; align-items: center; gap: 6px;
-      padding: 5px 12px;
-      border-radius: 99px;
-      background: rgba(0,212,170,.12);
-      border: 1px solid rgba(0,212,170,.3);
-      font-size: 12px; font-weight: 600; color: var(--green);
-      letter-spacing: .5px;
+      padding: 5px 12px; border-radius: 99px;
+      background: rgba(0,212,170,.12); border: 1px solid rgba(0,212,170,.3);
+      font-size: 12px; font-weight: 600; color: var(--green); letter-spacing: .5px;
     }
     .live-dot {
-      width: 7px; height: 7px; border-radius: 50%;
-      background: var(--green);
+      width: 7px; height: 7px; border-radius: 50%; background: var(--green);
       box-shadow: 0 0 0 0 rgba(0,212,170,.5);
       animation: pulse-dot 1.8s infinite;
     }
     @keyframes pulse-dot {
-      0%   { box-shadow: 0 0 0 0   rgba(0,212,170,.5); }
-      60%  { box-shadow: 0 0 0 8px rgba(0,212,170,0);  }
-      100% { box-shadow: 0 0 0 0   rgba(0,212,170,0);  }
+      0%  { box-shadow: 0 0 0 0   rgba(0,212,170,.5); }
+      60% { box-shadow: 0 0 0 8px rgba(0,212,170,0); }
+      100%{ box-shadow: 0 0 0 0   rgba(0,212,170,0); }
     }
-    .theme-btn {
+    .icon-btn {
       width: 38px; height: 38px; border-radius: 50%;
       background: var(--surface); border: 1px solid var(--border);
-      color: var(--text); font-size: 17px;
-      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      color: var(--text); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
       transition: all var(--transition);
     }
-    .theme-btn:hover { background: var(--border); transform: scale(1.08); }
+    .icon-btn:hover { background: var(--border); transform: scale(1.08); }
+    .icon-btn svg { width: 17px; height: 17px; }
 
-    /* ── Stats bar ─────────────────────────────────────────────────────── */
+    /* ── Stats bar ──────────────────────────────────────────────────────── */
     .stats-bar {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 1px;
-      background: var(--border);
-      border-bottom: 1px solid var(--border);
+      display: grid; grid-template-columns: repeat(4,1fr);
+      gap: 1px; background: var(--border); border-bottom: 1px solid var(--border);
     }
     .stat {
-      background: var(--card);
-      padding: 14px 20px;
+      background: var(--card); padding: 14px 20px;
       display: flex; align-items: center; gap: 12px;
       transition: background var(--transition);
     }
     .stat-icon {
-      width: 38px; height: 38px; border-radius: 10px;
-      display: flex; align-items: center; justify-content: center; font-size: 18px;
-      flex-shrink: 0;
+      width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
     }
-    .stat-icon.green  { background: rgba(0,212,170,.12); }
-    .stat-icon.red    { background: rgba(255,71,87,.12); }
-    .stat-icon.blue   { background: rgba(78,158,255,.12); }
-    .stat-icon.yellow { background: rgba(255,165,2,.12); }
+    .stat-icon svg { width: 20px; height: 20px; }
+    .stat-icon.blue   { background: rgba(78,158,255,.12);  color: var(--blue); }
+    .stat-icon.red    { background: rgba(255,71,87,.12);   color: var(--red); }
+    .stat-icon.green  { background: rgba(0,212,170,.12);   color: var(--green); }
+    .stat-icon.yellow { background: rgba(255,165,2,.12);   color: var(--yellow); }
     .stat-body { min-width: 0; }
     .stat-val { font-size: 22px; font-weight: 700; line-height: 1.1; }
     .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase;
                   letter-spacing: .6px; margin-top: 2px; }
+    .status-row { display: flex; align-items: center; gap: 6px;
+                  font-size: 13px; font-weight: 600; padding-top: 3px; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .status-dot.green  { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .status-dot.yellow { background: var(--yellow); }
+    .status-dot.red    { background: var(--red); }
     @media (max-width: 640px) {
-      .stats-bar { grid-template-columns: repeat(2, 1fr); }
+      .stats-bar { grid-template-columns: repeat(2,1fr); }
       .stat { padding: 12px 14px; }
       .stat-val { font-size: 18px; }
     }
 
-    /* ── Tabs ──────────────────────────────────────────────────────────── */
+    /* ── Tabs ───────────────────────────────────────────────────────────── */
     .tab-bar {
-      display: flex; gap: 4px;
-      padding: 16px 24px 0;
-      border-bottom: 1px solid var(--border);
-      background: var(--card);
+      display: flex; gap: 4px; padding: 14px 24px 0;
+      border-bottom: 1px solid var(--border); background: var(--card);
     }
     .tab-btn {
-      padding: 9px 20px; border-radius: var(--radius-sm) var(--radius-sm) 0 0;
-      border: none; background: none;
-      color: var(--muted); font-size: 14px; font-weight: 500;
-      cursor: pointer; transition: all var(--transition);
+      padding: 9px 18px; border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+      border: none; background: none; color: var(--muted);
+      font-size: 14px; font-weight: 500; cursor: pointer;
       display: flex; align-items: center; gap: 7px;
       border-bottom: 2px solid transparent; margin-bottom: -1px;
+      transition: all var(--transition);
     }
+    .tab-btn svg { width: 15px; height: 15px; }
     .tab-btn:hover { color: var(--text); background: var(--surface); }
-    .tab-btn.active {
-      color: var(--green); border-bottom-color: var(--green);
-      background: var(--surface);
-    }
+    .tab-btn.active { color: var(--green); border-bottom-color: var(--green); background: var(--surface); }
     .tab-pane { display: none; padding: 24px; }
     .tab-pane.active { display: block; }
 
-    /* ── Alert banner ──────────────────────────────────────────────────── */
+    /* ── Alert banner ───────────────────────────────────────────────────── */
     .alert-banner {
       display: flex; align-items: center; gap: 12px;
-      padding: 14px 20px; border-radius: var(--radius);
-      margin-bottom: 20px; font-weight: 600; font-size: 15px;
+      padding: 14px 20px; border-radius: var(--radius); margin-bottom: 20px;
+      font-weight: 600; font-size: 15px; border: 1px solid transparent;
       transition: all .4s cubic-bezier(.4,0,.2,1);
-      border: 1px solid transparent;
     }
+    .alert-banner svg { width: 22px; height: 22px; flex-shrink: 0; }
     .alert-banner.pothole {
-      background: rgba(255,71,87,.1);
-      border-color: rgba(255,71,87,.4);
-      color: var(--red);
+      background: rgba(255,71,87,.1); border-color: rgba(255,71,87,.4); color: var(--red);
       animation: alert-shake .4s ease;
     }
     .alert-banner.clear {
-      background: rgba(0,212,170,.08);
-      border-color: rgba(0,212,170,.3);
-      color: var(--green);
+      background: rgba(0,212,170,.08); border-color: rgba(0,212,170,.3); color: var(--green);
+    }
+    .alert-banner.processing {
+      background: rgba(78,158,255,.08); border-color: rgba(78,158,255,.3); color: var(--blue);
     }
     @keyframes alert-shake {
-      0%,100% { transform: translateX(0); }
-      20%      { transform: translateX(-6px); }
-      40%      { transform: translateX(6px); }
-      60%      { transform: translateX(-4px); }
-      80%      { transform: translateX(4px); }
+      0%,100%{ transform: translateX(0); } 20%{ transform: translateX(-6px); }
+      40%{ transform: translateX(6px); }   60%{ transform: translateX(-4px); }
+      80%{ transform: translateX(4px); }
     }
-    .alert-icon { font-size: 22px; }
 
-    /* ── Dashboard grid ────────────────────────────────────────────────── */
-    .dashboard-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-    }
+    /* ── Dashboard grid ─────────────────────────────────────────────────── */
+    .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
     @media (max-width: 900px) { .dashboard-grid { grid-template-columns: 1fr; } }
-
     .panel {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
       transition: background var(--transition), border-color var(--transition);
     }
     .panel-header {
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--border);
+      padding: 15px 20px; border-bottom: 1px solid var(--border);
       display: flex; align-items: center; justify-content: space-between;
     }
-    .panel-title { font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+    .panel-title {
+      font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px;
+    }
+    .panel-title svg { width: 16px; height: 16px; color: var(--muted); }
     .panel-body { padding: 20px; }
 
-    /* ── Image / Canvas ────────────────────────────────────────────────── */
+    /* ── Image / Canvas ─────────────────────────────────────────────────── */
     .img-wrap {
       position: relative; border-radius: var(--radius-sm); overflow: hidden;
       background: var(--surface); aspect-ratio: 4/3;
@@ -233,19 +213,17 @@
       position: absolute; top: 0; left: 0;
     }
     .img-placeholder {
-      display: flex; flex-direction: column; align-items: center; gap: 8px;
-      color: var(--dim); font-size: 13px;
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      color: var(--dim); font-size: 13px; text-align: center;
     }
-    .img-placeholder .ph-icon { font-size: 36px; opacity: .4; }
+    .img-placeholder svg { width: 40px; height: 40px; opacity: .35; }
     .img-meta {
       margin-top: 12px; display: flex; align-items: center;
       justify-content: space-between; font-size: 12px; color: var(--muted);
     }
 
-    /* ── Detection stats ───────────────────────────────────────────────── */
-    .det-grid {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px;
-    }
+    /* ── Detection mini-stats ───────────────────────────────────────────── */
+    .det-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
     .det-stat {
       background: var(--surface); border-radius: var(--radius-sm);
       padding: 14px 16px; border: 1px solid var(--border);
@@ -254,24 +232,28 @@
     .det-stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase;
                       letter-spacing: .5px; margin-top: 4px; }
 
-    /* ── Badges ────────────────────────────────────────────────────────── */
+    /* ── Badges ─────────────────────────────────────────────────────────── */
     .badge {
       display: inline-flex; align-items: center; gap: 5px;
       padding: 4px 10px; border-radius: 99px;
-      font-size: 11px; font-weight: 700; text-transform: uppercase;
-      letter-spacing: .5px;
+      font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
     }
-    .badge.green  { background: rgba(0,212,170,.15);  color: var(--green); }
-    .badge.red    { background: rgba(255,71,87,.15);  color: var(--red);   }
-    .badge.yellow { background: rgba(255,165,2,.15);  color: var(--yellow);}
-    .badge.blue   { background: rgba(78,158,255,.15); color: var(--blue);  }
-    .badge.dot::before { content: ''; width: 6px; height: 6px; border-radius: 50%;
-                         background: currentColor; }
+    .badge.green  { background: rgba(0,212,170,.15); color: var(--green); }
+    .badge.red    { background: rgba(255,71,87,.15); color: var(--red); }
+    .badge.yellow { background: rgba(255,165,2,.15); color: var(--yellow); }
+    .badge.blue   { background: rgba(78,158,255,.15); color: var(--blue); }
+    .badge.dot::before {
+      content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor;
+    }
 
-    /* ── History cards ─────────────────────────────────────────────────── */
+    /* ── Refresh spinner ────────────────────────────────────────────────── */
+    .spin { animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── History cards ──────────────────────────────────────────────────── */
     .card-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(240px,1fr));
       gap: 16px;
     }
     .capture-card {
@@ -284,39 +266,37 @@
       box-shadow: 0 8px 32px rgba(0,212,170,.12);
     }
     .capture-card .thumb {
-      aspect-ratio: 16/10; overflow: hidden; background: var(--surface);
-      position: relative;
+      aspect-ratio: 16/10; overflow: hidden; background: var(--surface); position: relative;
     }
     .capture-card .thumb img {
-      width: 100%; height: 100%; object-fit: cover;
-      transition: transform .3s ease;
+      width: 100%; height: 100%; object-fit: cover; transition: transform .3s ease;
     }
     .capture-card:hover .thumb img { transform: scale(1.04); }
-    .capture-card .thumb .card-badge {
-      position: absolute; top: 8px; right: 8px;
-    }
+    .capture-card .thumb .card-badge { position: absolute; top: 8px; right: 8px; }
     .capture-card .card-body { padding: 14px; }
     .capture-card .card-time { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
     .capture-card .card-stats {
-      display: flex; align-items: center; justify-content: space-between;
-      font-size: 12px;
+      display: flex; align-items: center; justify-content: space-between; font-size: 12px;
     }
     .capture-card .card-conf { color: var(--muted); }
-    .no-results { text-align: center; color: var(--muted); padding: 60px 0; font-size: 14px; }
+    .no-results {
+      grid-column: 1/-1; text-align: center; color: var(--dim);
+      padding: 60px 0; display: flex; flex-direction: column; align-items: center; gap: 12px;
+    }
+    .no-results svg { width: 44px; height: 44px; opacity: .3; }
+    .no-results span { font-size: 14px; }
 
-    /* ── Modal ─────────────────────────────────────────────────────────── */
+    /* ── Modal ──────────────────────────────────────────────────────────── */
     .modal-overlay {
       position: fixed; inset: 0; z-index: 200;
-      background: rgba(0,0,0,.75); backdrop-filter: blur(8px);
-      display: flex; align-items: center; justify-content: center;
-      padding: 20px;
+      background: rgba(0,0,0,.78); backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: center; padding: 20px;
       opacity: 0; pointer-events: none; transition: opacity var(--transition);
     }
     .modal-overlay.open { opacity: 1; pointer-events: all; }
     .modal {
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: var(--radius); max-width: 800px; width: 100%;
-      max-height: 90dvh; overflow-y: auto;
+      background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+      max-width: 800px; width: 100%; max-height: 90dvh; overflow-y: auto;
       transform: translateY(20px); transition: transform var(--transition);
       box-shadow: var(--shadow-lg);
     }
@@ -330,10 +310,11 @@
     .modal-close {
       width: 34px; height: 34px; border-radius: 50%;
       background: var(--surface); border: 1px solid var(--border);
-      color: var(--muted); font-size: 18px;
-      cursor: pointer; display: flex; align-items: center; justify-content: center;
-      transition: all var(--transition); line-height: 1;
+      color: var(--muted); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all var(--transition);
     }
+    .modal-close svg { width: 16px; height: 16px; }
     .modal-close:hover { background: var(--red); color: #fff; border-color: var(--red); }
     .modal-body { padding: 24px; }
     .modal-img-wrap {
@@ -341,90 +322,107 @@
       background: var(--surface); aspect-ratio: 4/3; margin-bottom: 20px;
     }
     .modal-img-wrap img, .modal-img-wrap canvas {
-      width: 100%; height: 100%; object-fit: contain;
-      position: absolute; top: 0; left: 0;
+      width: 100%; height: 100%; object-fit: contain; position: absolute; top: 0; left: 0;
     }
     .modal-meta-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 12px;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr)); gap: 12px;
     }
     .modal-meta-item {
       background: var(--surface); border-radius: var(--radius-sm);
       padding: 12px 14px; border: 1px solid var(--border);
     }
-    .modal-meta-item .m-label { font-size: 10px; color: var(--muted);
-                                text-transform: uppercase; letter-spacing: .6px; }
+    .modal-meta-item .m-label {
+      font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px;
+    }
     .modal-meta-item .m-val { font-size: 16px; font-weight: 600; margin-top: 4px; }
     .det-list { margin-top: 20px; }
-    .det-list-title { font-size: 13px; font-weight: 600; color: var(--muted);
-                      text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; }
+    .det-list-title {
+      font-size: 12px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px;
+    }
     .det-item {
       display: flex; align-items: center; gap: 12px;
       padding: 12px 14px; background: var(--surface);
       border-radius: var(--radius-sm); border: 1px solid var(--border);
       margin-bottom: 8px; font-size: 13px;
     }
-    .det-item .di-num {
-      width: 24px; height: 24px; border-radius: 50%;
-      background: var(--blue); color: #fff;
+    .di-num {
+      width: 24px; height: 24px; border-radius: 50%; background: var(--blue); color: #fff;
       display: flex; align-items: center; justify-content: center;
       font-size: 11px; font-weight: 700; flex-shrink: 0;
     }
-    .det-item .di-info { flex: 1; min-width: 0; }
-    .det-item .di-conf { font-weight: 700; }
+    .di-info { flex: 1; min-width: 0; }
+    .di-conf { font-weight: 700; }
 
-    /* ── Map ───────────────────────────────────────────────────────────── */
+    /* ── Map ────────────────────────────────────────────────────────────── */
+    .map-wrap { position: relative; }
     #map {
-      height: 560px; border-radius: var(--radius);
+      height: 580px; border-radius: var(--radius);
       border: 1px solid var(--border); overflow: hidden;
     }
+
+    /* Leaflet popup theming */
     .leaflet-popup-content-wrapper {
       background: var(--card) !important; color: var(--text) !important;
       border: 1px solid var(--border) !important; border-radius: var(--radius) !important;
-      box-shadow: var(--shadow) !important;
+      box-shadow: var(--shadow) !important; padding: 0 !important;
     }
-    .leaflet-popup-tip { background: var(--card) !important; }
-    .popup-img { width: 100%; height: 100px; object-fit: cover;
-                 border-radius: 6px; margin-bottom: 8px; }
-    .popup-row { font-size: 12px; color: var(--muted); margin-bottom: 3px; }
+    .leaflet-popup-content { margin: 0 !important; }
+    .leaflet-popup-tip-container { display: none; }
+    .leaflet-popup-close-button {
+      color: var(--muted) !important; font-size: 18px !important;
+      top: 6px !important; right: 8px !important;
+    }
+
+    /* Leaflet layer control theming */
+    .leaflet-control-layers {
+      background: var(--card) !important; border: 1px solid var(--border) !important;
+      border-radius: var(--radius-sm) !important; box-shadow: var(--shadow) !important;
+      color: var(--text) !important;
+    }
+    .leaflet-control-layers-toggle {
+      background-color: var(--card) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: var(--radius-sm) !important;
+    }
+    .leaflet-control-layers-list { padding: 8px 12px !important; min-width: 130px; }
+    .leaflet-control-layers label {
+      color: var(--text) !important; font-size: 13px !important;
+      font-family: inherit !important; display: flex; align-items: center; gap: 6px;
+      margin-bottom: 4px; cursor: pointer;
+    }
+    .leaflet-control-layers-separator { border-color: var(--border) !important; }
+    .leaflet-control-zoom a {
+      background: var(--card) !important; color: var(--text) !important;
+      border-color: var(--border) !important;
+    }
+    .leaflet-control-zoom a:hover { background: var(--surface) !important; }
+    .leaflet-bar { border: 1px solid var(--border) !important; border-radius: var(--radius-sm) !important; }
+
+    .popup-inner { padding: 12px; min-width: 190px; }
+    .popup-img { width: 100%; height: 100px; object-fit: cover; border-radius: 6px; margin-bottom: 10px; }
+    .popup-title { font-weight: 700; font-size: 13px; margin-bottom: 6px; }
+    .popup-row { font-size: 12px; color: var(--muted); margin-bottom: 3px; display: flex; gap: 4px; }
     .popup-row strong { color: var(--text); }
 
-    /* ── Refresh spinner ───────────────────────────────────────────────── */
-    .refresh-ring {
-      width: 16px; height: 16px; border-radius: 50%;
-      border: 2px solid var(--border); border-top-color: var(--green);
-      animation: spin .8s linear infinite; display: inline-block;
+    /* Map legend */
+    .map-legend {
+      position: absolute; bottom: 28px; left: 12px; z-index: 500;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 10px 14px;
+      display: flex; flex-direction: column; gap: 6px; pointer-events: none;
+      box-shadow: var(--shadow);
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .refreshing .refresh-ring { display: inline-block; }
+    .legend-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+    .legend-dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #fff; flex-shrink: 0; }
 
-    /* ── Utility ───────────────────────────────────────────────────────── */
-    .flex { display: flex; }
-    .items-center { align-items: center; }
-    .gap-8 { gap: 8px; }
-    .gap-12 { gap: 12px; }
-    .text-muted { color: var(--muted); }
-    .text-sm { font-size: 13px; }
-    .mt-4 { margin-top: 16px; }
-    .fw-600 { font-weight: 600; }
-    .w-full { width: 100%; }
-
-    /* ── Loading skeleton ──────────────────────────────────────────────── */
-    .skeleton {
-      background: linear-gradient(90deg, var(--surface) 25%, var(--border) 50%, var(--surface) 75%);
-      background-size: 200% 100%;
-      animation: skeleton-anim 1.5s infinite;
-      border-radius: 6px;
-    }
-    @keyframes skeleton-anim { from { background-position: 200% 0; } to { background-position: -200% 0; } }
-
-    /* ── Responsive nav ────────────────────────────────────────────────── */
+    /* ── Responsive ─────────────────────────────────────────────────────── */
     @media (max-width: 480px) {
       .nav { padding: 0 16px; }
+      .nav-logo .nav-name { display: none; }
       .tab-pane { padding: 16px; }
       .panel-body { padding: 14px; }
       .card-grid { grid-template-columns: 1fr 1fr; }
-      .nav-logo span { display: none; }
     }
   </style>
 </head>
@@ -433,45 +431,89 @@
 <!-- ── Navbar ──────────────────────────────────────────────────────────────── -->
 <nav class="nav">
   <div class="nav-logo">
-    <div class="icon">🛣️</div>
-    <span>PotholeWatch</span>
+    <div class="nav-logo-mark">
+      <!-- Road / eye mark -->
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+        <circle cx="12" cy="12" r="3"/>
+        <line x1="12" y1="19" x2="11" y2="22"/>
+        <line x1="12" y1="19" x2="13" y2="22"/>
+      </svg>
+    </div>
+    <span class="nav-name">PotholeWatch</span>
   </div>
   <div class="nav-right">
     <div class="live-badge">
       <div class="live-dot"></div>
       <span>LIVE</span>
     </div>
-    <button class="theme-btn" id="themeBtn" title="Toggle theme">🌙</button>
+    <button class="icon-btn" id="themeBtn" title="Toggle theme">
+      <!-- Moon icon (shown in dark mode) -->
+      <svg id="iconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+      </svg>
+      <!-- Sun icon (shown in light mode) -->
+      <svg id="iconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+        <circle cx="12" cy="12" r="5"/>
+        <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+        <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+      </svg>
+    </button>
   </div>
 </nav>
 
 <!-- ── Stats bar ───────────────────────────────────────────────────────────── -->
 <div class="stats-bar">
   <div class="stat">
-    <div class="stat-icon blue">📸</div>
+    <div class="stat-icon blue">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+    </div>
     <div class="stat-body">
       <div class="stat-val" id="statCaptures">—</div>
       <div class="stat-label">Captures Today</div>
     </div>
   </div>
   <div class="stat">
-    <div class="stat-icon red">⚠️</div>
+    <div class="stat-icon red">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+    </div>
     <div class="stat-body">
       <div class="stat-val" id="statPotholes">—</div>
       <div class="stat-label">Potholes Today</div>
     </div>
   </div>
   <div class="stat">
-    <div class="stat-icon green">🎯</div>
+    <div class="stat-icon green">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <circle cx="12" cy="12" r="3"/>
+        <line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/>
+        <line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/>
+      </svg>
+    </div>
     <div class="stat-body">
       <div class="stat-val" id="statConf">—</div>
       <div class="stat-label">Avg Confidence</div>
     </div>
   </div>
   <div class="stat">
-    <div class="stat-icon yellow">⚡</div>
+    <div class="stat-icon yellow">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+      </svg>
+    </div>
     <div class="stat-body">
-      <div class="stat-val" id="statStatus" style="font-size:14px;padding-top:4px">Loading…</div>
+      <div class="status-row" id="statStatus">
+        <span class="status-dot yellow"></span><span>Loading…</span>
+      </div>
       <div class="stat-label">System Status</div>
     </div>
   </div>
@@ -479,16 +521,35 @@
 
 <!-- ── Tabs ────────────────────────────────────────────────────────────────── -->
 <div class="tab-bar">
-  <button class="tab-btn active" data-tab="dashboard">📡 Dashboard</button>
-  <button class="tab-btn" data-tab="history">📋 History</button>
-  <button class="tab-btn" data-tab="map">🗺️ Map</button>
+  <button class="tab-btn active" data-tab="dashboard">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+      <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+    </svg>
+    Dashboard
+  </button>
+  <button class="tab-btn" data-tab="history">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+    </svg>
+    History
+  </button>
+  <button class="tab-btn" data-tab="map">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+      <line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/>
+    </svg>
+    Map
+  </button>
 </div>
 
 <!-- ── DASHBOARD ───────────────────────────────────────────────────────────── -->
 <div class="tab-pane active" id="tab-dashboard">
-  <!-- Alert -->
   <div class="alert-banner clear" id="alertBanner">
-    <span class="alert-icon">✅</span>
+    <svg id="alertIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+      <polyline points="22 4 12 14.01 9 11.01"/>
+    </svg>
     <span id="alertText">Waiting for first capture…</span>
   </div>
 
@@ -496,22 +557,34 @@
     <!-- Live Feed -->
     <div class="panel">
       <div class="panel-header">
-        <div class="panel-title">📡 Live Feed</div>
-        <div id="feedRefreshIndicator" style="display:none">
-          <span class="refresh-ring"></span>
+        <div class="panel-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/>
+            <circle cx="12" cy="12" r="2"/>
+            <path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/>
+          </svg>
+          Live Feed
+        </div>
+        <div id="feedRefreshIndicator" style="display:none; color:var(--green)">
+          <svg class="spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+          </svg>
         </div>
       </div>
       <div class="panel-body">
         <div class="img-wrap" id="feedWrap">
           <div class="img-placeholder">
-            <div class="ph-icon">📷</div>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
             <div>Waiting for drone feed…</div>
           </div>
           <img id="feedImg" src="" alt="Live feed" style="display:none" />
         </div>
         <div class="img-meta">
-          <span id="feedFilename" class="text-muted text-sm">—</span>
-          <span id="feedTime" class="text-muted text-sm">—</span>
+          <span id="feedFilename" style="color:var(--muted);font-size:12px">—</span>
+          <span id="feedTime" style="color:var(--muted);font-size:12px">—</span>
         </div>
       </div>
     </div>
@@ -519,13 +592,21 @@
     <!-- Detection Result -->
     <div class="panel">
       <div class="panel-header">
-        <div class="panel-title">🔍 Detection Result</div>
+        <div class="panel-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          Detection Result
+        </div>
         <div id="detBadgeWrap"></div>
       </div>
       <div class="panel-body">
         <div class="img-wrap" id="detWrap">
           <div class="img-placeholder">
-            <div class="ph-icon">🤖</div>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+              <line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
             <div>No detection yet…</div>
           </div>
           <img id="detImg" src="" alt="Detection" style="display:none" />
@@ -557,21 +638,43 @@
 <!-- ── HISTORY ─────────────────────────────────────────────────────────────── -->
 <div class="tab-pane" id="tab-history">
   <div id="historyGrid" class="card-grid">
-    <div style="color:var(--muted);grid-column:1/-1;text-align:center;padding:40px 0">Loading history…</div>
+    <div class="no-results">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/>
+        <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
+      </svg>
+      <span>Loading history…</span>
+    </div>
   </div>
 </div>
 
 <!-- ── MAP ─────────────────────────────────────────────────────────────────── -->
 <div class="tab-pane" id="tab-map">
-  <div id="map"></div>
+  <div class="map-wrap">
+    <div id="map"></div>
+    <div class="map-legend">
+      <div class="legend-row">
+        <div class="legend-dot" style="background:#ff4757"></div>
+        Pothole detected
+      </div>
+      <div class="legend-row">
+        <div class="legend-dot" style="background:#00d4aa"></div>
+        Road clear
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ── Modal ───────────────────────────────────────────────────────────────── -->
 <div class="modal-overlay" id="modalOverlay">
-  <div class="modal" id="modal">
+  <div class="modal">
     <div class="modal-header">
       <div class="modal-title" id="modalTitle">Capture Detail</div>
-      <button class="modal-close" id="modalClose">✕</button>
+      <button class="modal-close" id="modalClose">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
     </div>
     <div class="modal-body">
       <div class="modal-img-wrap">
@@ -599,20 +702,32 @@ let mapMarkers      = [];
 let audioCtx        = null;
 let lastAlertId     = null;
 
-/* ── Theme ───────────────────────────────────────────────────────────────── */
-const themeBtn = document.getElementById('themeBtn');
-const savedTheme = localStorage.getItem('pw-theme') || 'dark';
-document.documentElement.dataset.theme = savedTheme;
-themeBtn.textContent = savedTheme === 'dark' ? '🌙' : '☀️';
+/* ── SVG icon strings (for dynamic HTML) ────────────────────────────────── */
+const IC = {
+  warning: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+  check:   `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
+  clock:   `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+  inbox:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>`,
+  noimg:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`,
+};
 
+/* ── Theme ───────────────────────────────────────────────────────────────── */
+const themeBtn  = document.getElementById('themeBtn');
+const iconMoon  = document.getElementById('iconMoon');
+const iconSun   = document.getElementById('iconSun');
+const savedTheme = localStorage.getItem('pw-theme') || 'dark';
+applyTheme(savedTheme);
+
+function applyTheme(t) {
+  document.documentElement.dataset.theme = t;
+  localStorage.setItem('pw-theme', t);
+  iconMoon.style.display = t === 'dark' ? '' : 'none';
+  iconSun.style.display  = t === 'light' ? '' : 'none';
+}
 themeBtn.addEventListener('click', () => {
   const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-  document.documentElement.dataset.theme = next;
-  localStorage.setItem('pw-theme', next);
-  themeBtn.textContent = next === 'dark' ? '🌙' : '☀️';
-  if (mapInstance) {
-    setTimeout(() => mapInstance.invalidateSize(), 300);
-  }
+  applyTheme(next);
+  if (mapInstance) setTimeout(() => mapInstance.invalidateSize(), 300);
 });
 
 /* ── Tabs ────────────────────────────────────────────────────────────────── */
@@ -622,270 +737,208 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-
-    if (btn.dataset.tab === 'map') {
-      initMap();
-      setTimeout(() => mapInstance && mapInstance.invalidateSize(), 200);
-    }
+    if (btn.dataset.tab === 'map')     { initMap(); setTimeout(() => mapInstance && mapInstance.invalidateSize(), 200); }
     if (btn.dataset.tab === 'history') renderHistory();
   });
 });
 
-/* ── Supabase fetch helpers ──────────────────────────────────────────────── */
+/* ── Supabase ────────────────────────────────────────────────────────────── */
 async function sbFetch(path) {
   const r = await fetch(`${SB_URL}${path}`, { headers: SB_HDRS });
-  if (!r.ok) throw new Error(`Supabase ${r.status}: ${r.statusText}`);
+  if (!r.ok) throw new Error(`Supabase ${r.status}`);
   return r.json();
 }
+const fetchLatest  = () => sbFetch('/rest/v1/captures?select=*&order=captured_at.desc&limit=1').then(d => d[0] || null);
+const fetchHistory = () => sbFetch('/rest/v1/captures?select=*&order=captured_at.desc&limit=50');
 
-async function fetchLatest() {
-  const data = await sbFetch('/rest/v1/captures?select=*&order=captured_at.desc&limit=1');
-  return data[0] || null;
-}
-
-async function fetchHistory() {
-  return sbFetch('/rest/v1/captures?select=*&order=captured_at.desc&limit=50');
-}
-
-/* ── Date formatting ─────────────────────────────────────────────────────── */
+/* ── Date helpers ────────────────────────────────────────────────────────── */
 function fmtDate(iso) {
   if (!iso) return '—';
-  const d = new Date(iso);
-  return d.toLocaleString(undefined, {
-    month: 'short', day: 'numeric',
-    hour: '2-digit', minute: '2-digit', second: '2-digit'
-  });
+  return new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 function fmtDateShort(iso) {
   if (!iso) return '—';
-  const d = new Date(iso);
-  return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 function isToday(iso) {
   if (!iso) return false;
   const d = new Date(iso), n = new Date();
-  return d.getFullYear() === n.getFullYear() &&
-         d.getMonth()    === n.getMonth()    &&
-         d.getDate()     === n.getDate();
+  return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
 }
 
 /* ── Severity helpers ────────────────────────────────────────────────────── */
-function severityColor(s) {
-  return s === 'Large' ? 'red' : s === 'Medium' ? 'yellow' : 'green';
+const SEV_ORDER = { Large: 3, Medium: 2, Small: 1 };
+const severityColor = s => s === 'Large' ? 'red' : s === 'Medium' ? 'yellow' : 'green';
+function topSeverity(dets) {
+  if (!dets?.length) return null;
+  return dets.reduce((a, b) => (SEV_ORDER[b.severity]||0) > (SEV_ORDER[a.severity]||0) ? b : a).severity;
 }
-function topSeverity(detections) {
-  if (!detections || !detections.length) return null;
-  const order = { Large: 3, Medium: 2, Small: 1 };
-  return detections.reduce((a, b) =>
-    (order[b.severity] || 0) > (order[a.severity] || 0) ? b : a
-  ).severity;
-}
-function topConf(detections) {
-  if (!detections || !detections.length) return null;
-  return Math.max(...detections.map(d => d.confidence));
+function topConf(dets) {
+  if (!dets?.length) return null;
+  return Math.max(...dets.map(d => d.confidence));
 }
 
 /* ── Web Audio beep ──────────────────────────────────────────────────────── */
 function beep() {
   try {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
+    const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
     osc.connect(gain); gain.connect(audioCtx.destination);
     osc.type = 'square';
     osc.frequency.setValueAtTime(880, audioCtx.currentTime);
     osc.frequency.setValueAtTime(660, audioCtx.currentTime + 0.1);
-    gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
-    osc.start(audioCtx.currentTime);
-    osc.stop(audioCtx.currentTime + 0.4);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.4);
   } catch (_) {}
 }
 
 /* ── Canvas bounding boxes ───────────────────────────────────────────────── */
 function drawBoxes(canvas, img, detections) {
-  if (!detections || !detections.length) return;
+  if (!detections?.length) return;
   const dpr = window.devicePixelRatio || 1;
   const rect = img.getBoundingClientRect();
-  const displayW = rect.width || img.offsetWidth;
-  const displayH = rect.height || img.offsetHeight;
-
-  canvas.style.width  = displayW + 'px';
-  canvas.style.height = displayH + 'px';
-  canvas.width  = displayW * dpr;
-  canvas.height = displayH * dpr;
+  const dW = rect.width || img.offsetWidth, dH = rect.height || img.offsetHeight;
+  canvas.style.width = dW + 'px'; canvas.style.height = dH + 'px';
+  canvas.width = dW * dpr; canvas.height = dH * dpr;
   canvas.style.display = 'block';
-
-  const ctx = canvas.getContext('2d');
-  ctx.scale(dpr, dpr);
-
-  const naturalW = img.naturalWidth  || 640;
-  const naturalH = img.naturalHeight || 480;
-  const scaleX = displayW / naturalW;
-  const scaleY = displayH / naturalH;
-
-  const colors = { Large: '#ff4757', Medium: '#ffa502', Small: '#00d4aa' };
-
+  const ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr);
+  const sX = dW / (img.naturalWidth || 640), sY = dH / (img.naturalHeight || 480);
+  const cols = { Large: '#ff4757', Medium: '#ffa502', Small: '#00d4aa' };
   detections.forEach((det, i) => {
     const { x1, y1, x2, y2 } = det.bbox;
-    const sx = x1 * scaleX, sy = y1 * scaleY;
-    const sw = (x2 - x1) * scaleX, sh = (y2 - y1) * scaleY;
-    const col = colors[det.severity] || '#4e9eff';
+    const sx = x1*sX, sy = y1*sY, sw = (x2-x1)*sX, sh = (y2-y1)*sY;
+    const col = cols[det.severity] || '#4e9eff';
     const conf = Math.round(det.confidence * 100);
-
-    ctx.strokeStyle = col;
-    ctx.lineWidth = 2.5;
-    ctx.strokeRect(sx, sy, sw, sh);
-
-    ctx.fillStyle = col;
-    const label = `#${i + 1} ${det.severity} ${conf}%`;
-    const fontSize = Math.max(10, Math.min(14, displayW / 50));
-    ctx.font = `bold ${fontSize}px system-ui, sans-serif`;
-    const textW = ctx.measureText(label).width + 10;
-    const labelH = fontSize + 10;
-    const lx = sx, ly = sy - labelH < 0 ? sy : sy - labelH;
-    ctx.fillRect(lx, ly, textW, labelH);
-    ctx.fillStyle = '#fff';
-    ctx.fillText(label, lx + 5, ly + labelH - 5);
+    ctx.strokeStyle = col; ctx.lineWidth = 2.5; ctx.strokeRect(sx, sy, sw, sh);
+    const label = `#${i+1} ${det.severity} ${conf}%`;
+    const fs = Math.max(10, Math.min(14, dW/50));
+    ctx.font = `bold ${fs}px system-ui,sans-serif`;
+    const tw = ctx.measureText(label).width + 10, lh = fs + 10;
+    const lx = sx, ly = sy - lh < 0 ? sy : sy - lh;
+    ctx.fillStyle = col; ctx.fillRect(lx, ly, tw, lh);
+    ctx.fillStyle = '#fff'; ctx.fillText(label, lx+5, ly+lh-5);
   });
 }
 
-/* ── Stats bar update ────────────────────────────────────────────────────── */
+/* ── Stats bar ───────────────────────────────────────────────────────────── */
 function updateStats() {
   const today = historyCaptures.filter(c => isToday(c.captured_at));
-  const potholeCaptures = today.filter(c => c.pothole_found);
-  const allDetections = historyCaptures.flatMap(c =>
-    Array.isArray(c.detection_data) ? c.detection_data : []
-  );
-  const avgConf = allDetections.length
-    ? Math.round(allDetections.reduce((s, d) => s + d.confidence, 0) / allDetections.length * 100)
-    : null;
+  const allDets = historyCaptures.flatMap(c => Array.isArray(c.detection_data) ? c.detection_data : []);
+  const avgConf = allDets.length
+    ? Math.round(allDets.reduce((s, d) => s + d.confidence, 0) / allDets.length * 100) : null;
 
   document.getElementById('statCaptures').textContent = today.length;
-  document.getElementById('statPotholes').textContent = potholeCaptures.length;
+  document.getElementById('statPotholes').textContent = today.filter(c => c.pothole_found).length;
   document.getElementById('statConf').textContent = avgConf !== null ? avgConf + '%' : '—';
-  document.getElementById('statStatus').textContent = latestCapture ? '🟢 Active' : '🟡 Waiting';
+
+  const statusEl = document.getElementById('statStatus');
+  if (latestCapture) {
+    statusEl.innerHTML = `<span class="status-dot green"></span><span>Active</span>`;
+  } else {
+    statusEl.innerHTML = `<span class="status-dot yellow"></span><span>Waiting</span>`;
+  }
 }
 
 /* ── Alert banner ────────────────────────────────────────────────────────── */
 function updateAlert(capture) {
+  if (!capture) return;
   const banner = document.getElementById('alertBanner');
   const text   = document.getElementById('alertText');
-  if (!capture) return;
-
-  const isNew = capture.id !== lastAlertId;
+  const icon   = document.getElementById('alertIcon');
+  const isNew  = capture.id !== lastAlertId;
 
   if (capture.pothole_found) {
     const cnt = capture.pothole_count || 0;
     const sev = topSeverity(capture.detection_data) || 'Unknown';
     banner.className = 'alert-banner pothole';
-    text.textContent = `⚠️ ${cnt} pothole${cnt !== 1 ? 's' : ''} detected! Severity: ${sev}`;
+    icon.outerHTML = IC.warning; // replace icon
+    text.textContent = `${cnt} pothole${cnt !== 1 ? 's' : ''} detected — Severity: ${sev}`;
     if (isNew) beep();
   } else if (capture.processed) {
     banner.className = 'alert-banner clear';
-    text.textContent = '✅ Road surface clear — no potholes detected';
+    document.getElementById('alertIcon')?.remove();
+    banner.insertAdjacentHTML('afterbegin', IC.check.replace('id="alertIcon"','id="alertIcon"'));
+    text.textContent = 'Road surface clear — no potholes detected';
   } else {
-    banner.className = 'alert-banner clear';
-    text.textContent = '🔄 Processing image…';
+    banner.className = 'alert-banner processing';
+    text.textContent = 'Processing image…';
   }
   lastAlertId = capture.id;
 }
 
-/* ── Dashboard live feed ─────────────────────────────────────────────────── */
+/* ── Dashboard ───────────────────────────────────────────────────────────── */
 function updateDashboard(capture) {
   if (!capture) return;
-
-  const feedImg    = document.getElementById('feedImg');
-  const detImg     = document.getElementById('detImg');
-  const detCanvas  = document.getElementById('detCanvas');
-  const feedWrap   = document.getElementById('feedWrap');
-  const detWrap    = document.getElementById('detWrap');
-
-  const imgUrl = capture.image_path;
+  const feedImg = document.getElementById('feedImg');
+  const detImg  = document.getElementById('detImg');
+  const detCvs  = document.getElementById('detCanvas');
+  const imgUrl  = capture.image_path;
 
   if (imgUrl) {
     feedImg.onload = () => {
-      feedWrap.querySelector('.img-placeholder') &&
-        feedWrap.querySelector('.img-placeholder').remove?.();
+      const ph = document.getElementById('feedWrap').querySelector('.img-placeholder');
+      if (ph) ph.remove();
     };
     if (feedImg.src !== imgUrl) feedImg.src = imgUrl;
     feedImg.style.display = 'block';
 
     detImg.onload = () => {
-      const detections = Array.isArray(capture.detection_data)
-        ? capture.detection_data : [];
-      detCanvas.style.display = detections.length ? 'block' : 'none';
-      if (detections.length) drawBoxes(detCanvas, detImg, detections);
-      else { const c = detCanvas.getContext('2d'); c.clearRect(0,0,detCanvas.width,detCanvas.height); }
+      const dets = Array.isArray(capture.detection_data) ? capture.detection_data : [];
+      if (dets.length) { detCvs.style.display = 'block'; drawBoxes(detCvs, detImg, dets); }
+      else { detCvs.style.display = 'none'; }
     };
     if (detImg.src !== imgUrl) detImg.src = imgUrl;
     detImg.style.display = 'block';
   }
 
   document.getElementById('feedFilename').textContent = capture.filename || '—';
-  document.getElementById('feedTime').textContent = fmtDate(capture.captured_at);
+  document.getElementById('feedTime').textContent     = fmtDate(capture.captured_at);
 
-  const detections = Array.isArray(capture.detection_data) ? capture.detection_data : [];
-  const cnt  = capture.pothole_count || 0;
-  const conf = topConf(detections);
-  const sev  = topSeverity(detections);
-  const maxSize = detections.length
-    ? Math.max(...detections.map(d => d.size_percent)).toFixed(1) + '%'
-    : '—';
-
-  document.getElementById('detCount').textContent = cnt;
-  document.getElementById('detConf').textContent  = conf !== null ? Math.round(conf * 100) + '%' : '—';
+  const dets = Array.isArray(capture.detection_data) ? capture.detection_data : [];
+  const conf = topConf(dets), sev = topSeverity(dets);
+  document.getElementById('detCount').textContent    = capture.pothole_count || 0;
+  document.getElementById('detConf').textContent     = conf !== null ? Math.round(conf*100)+'%' : '—';
   document.getElementById('detSeverity').textContent = sev || '—';
-  document.getElementById('detSize').textContent  = maxSize;
+  document.getElementById('detSize').textContent     = dets.length
+    ? Math.max(...dets.map(d => d.size_percent)).toFixed(1)+'%' : '—';
 
-  const badgeWrap = document.getElementById('detBadgeWrap');
-  if (capture.pothole_found && sev) {
-    badgeWrap.innerHTML = `<span class="badge dot ${severityColor(sev)}">${sev}</span>`;
-  } else if (capture.processed) {
-    badgeWrap.innerHTML = `<span class="badge dot green">Clear</span>`;
-  } else {
-    badgeWrap.innerHTML = `<span class="badge dot blue">Processing</span>`;
-  }
+  const bw = document.getElementById('detBadgeWrap');
+  if (capture.pothole_found && sev) bw.innerHTML = `<span class="badge dot ${severityColor(sev)}">${sev}</span>`;
+  else if (capture.processed)      bw.innerHTML = `<span class="badge dot green">Clear</span>`;
+  else                             bw.innerHTML = `<span class="badge dot blue">Processing</span>`;
 
   updateAlert(capture);
 }
 
-/* ── History rendering ───────────────────────────────────────────────────── */
+/* ── History ─────────────────────────────────────────────────────────────── */
 function renderHistory() {
   const grid = document.getElementById('historyGrid');
   if (!historyCaptures.length) {
-    grid.innerHTML = '<div class="no-results">📭 No captures yet</div>';
+    grid.innerHTML = `<div class="no-results">${IC.inbox}<span>No captures yet</span></div>`;
     return;
   }
   grid.innerHTML = historyCaptures.map((c, i) => {
-    const detections = Array.isArray(c.detection_data) ? c.detection_data : [];
-    const conf = topConf(detections);
-    const sev  = topSeverity(detections);
+    const dets = Array.isArray(c.detection_data) ? c.detection_data : [];
+    const conf = topConf(dets), sev = topSeverity(dets);
     const badge = c.pothole_found
-      ? `<span class="badge dot ${severityColor(sev || 'Small')}">${sev || 'Found'}</span>`
+      ? `<span class="badge dot ${severityColor(sev||'Small')}">${sev||'Found'}</span>`
       : c.processed
         ? `<span class="badge dot green">Clear</span>`
         : `<span class="badge dot blue">Processing</span>`;
-    const imgTag = c.image_path
+    const thumb = c.image_path
       ? `<img src="${c.image_path}" alt="" loading="lazy" />`
-      : `<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--dim)">No image</div>`;
-
-    return `
-      <div class="capture-card" data-idx="${i}">
-        <div class="thumb">
-          ${imgTag}
-          <div class="card-badge">${badge}</div>
+      : `<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--dim);padding:20px">${IC.noimg}</div>`;
+    return `<div class="capture-card" data-idx="${i}">
+      <div class="thumb">${thumb}<div class="card-badge">${badge}</div></div>
+      <div class="card-body">
+        <div class="card-time">${fmtDateShort(c.captured_at)}</div>
+        <div class="card-stats">
+          <span class="card-conf">${conf !== null ? Math.round(conf*100)+'% conf' : 'No detection'}</span>
+          <span class="badge ${c.pothole_found?'red':'green'}" style="font-size:10px">${c.pothole_count||0} found</span>
         </div>
-        <div class="card-body">
-          <div class="card-time">${fmtDateShort(c.captured_at)}</div>
-          <div class="card-stats">
-            <span class="card-conf">${conf !== null ? Math.round(conf * 100) + '% conf' : 'No detection'}</span>
-            <span class="badge ${c.pothole_found ? 'red' : 'green'}" style="font-size:10px">
-              ${c.pothole_count || 0} found
-            </span>
-          </div>
-        </div>
-      </div>`;
+      </div>
+    </div>`;
   }).join('');
 
   grid.querySelectorAll('.capture-card').forEach(card => {
@@ -894,93 +947,84 @@ function renderHistory() {
 }
 
 /* ── Modal ───────────────────────────────────────────────────────────────── */
-function openModal(capture) {
-  const overlay  = document.getElementById('modalOverlay');
+function openModal(c) {
   const modalImg = document.getElementById('modalImg');
   const modalCvs = document.getElementById('modalCanvas');
-  const meta     = document.getElementById('modalMeta');
-  const detList  = document.getElementById('modalDetList');
+  document.getElementById('modalTitle').textContent = c.filename || `Capture ${c.id}`;
 
-  document.getElementById('modalTitle').textContent =
-    capture.filename || `Capture ${capture.id}`;
-
-  if (capture.image_path) {
-    modalImg.src = capture.image_path;
+  if (c.image_path) {
+    modalImg.src = c.image_path;
     modalImg.onload = () => {
-      const detections = Array.isArray(capture.detection_data) ? capture.detection_data : [];
-      if (detections.length) {
-        modalCvs.style.display = 'block';
-        drawBoxes(modalCvs, modalImg, detections);
-      } else {
-        modalCvs.style.display = 'none';
-        const c = modalCvs.getContext('2d');
-        c.clearRect(0, 0, modalCvs.width, modalCvs.height);
-      }
+      const dets = Array.isArray(c.detection_data) ? c.detection_data : [];
+      if (dets.length) { modalCvs.style.display='block'; drawBoxes(modalCvs, modalImg, dets); }
+      else modalCvs.style.display = 'none';
     };
-  } else {
-    modalImg.src = '';
-    modalCvs.style.display = 'none';
-  }
+  } else { modalImg.src = ''; modalCvs.style.display = 'none'; }
 
-  const detections = Array.isArray(capture.detection_data) ? capture.detection_data : [];
-  const conf = topConf(detections);
-  const sev  = topSeverity(detections);
-  const gpsValid = capture.gps_valid && (capture.lat !== 0 || capture.lng !== 0);
+  const dets    = Array.isArray(c.detection_data) ? c.detection_data : [];
+  const conf    = topConf(dets), sev = topSeverity(dets);
+  const gpsOk   = c.gps_valid && (c.lat !== 0 || c.lng !== 0);
 
-  meta.innerHTML = [
-    { label: 'Timestamp', val: fmtDate(capture.captured_at) },
-    { label: 'Potholes', val: capture.pothole_count || 0 },
-    { label: 'Confidence', val: conf !== null ? Math.round(conf * 100) + '%' : '—' },
-    { label: 'Severity', val: sev || (capture.processed ? 'None' : 'Processing') },
-    { label: 'Latitude',  val: gpsValid ? capture.lat.toFixed(6) : 'GPS coming soon' },
-    { label: 'Longitude', val: gpsValid ? capture.lng.toFixed(6) : 'GPS coming soon' },
-    { label: 'GPS Accuracy', val: capture.gps_accuracy ? capture.gps_accuracy.toFixed(1) + 'm' : '—' },
-    { label: 'Processed', val: capture.processed ? 'Yes' : 'No' },
-  ].map(({ label, val }) => `
-    <div class="modal-meta-item">
-      <div class="m-label">${label}</div>
-      <div class="m-val">${val}</div>
-    </div>`).join('');
+  document.getElementById('modalMeta').innerHTML = [
+    { label: 'Timestamp',    val: fmtDate(c.captured_at) },
+    { label: 'Potholes',     val: c.pothole_count || 0 },
+    { label: 'Confidence',   val: conf !== null ? Math.round(conf*100)+'%' : '—' },
+    { label: 'Severity',     val: sev || (c.processed ? 'None' : 'Processing') },
+    { label: 'Latitude',     val: gpsOk ? c.lat.toFixed(6) : 'GPS coming soon' },
+    { label: 'Longitude',    val: gpsOk ? c.lng.toFixed(6) : 'GPS coming soon' },
+    { label: 'GPS Accuracy', val: c.gps_accuracy ? c.gps_accuracy.toFixed(1)+'m' : '—' },
+    { label: 'Processed',    val: c.processed ? 'Yes' : 'No' },
+  ].map(({label,val}) => `<div class="modal-meta-item"><div class="m-label">${label}</div><div class="m-val">${val}</div></div>`).join('');
 
-  if (detections.length) {
-    detList.innerHTML = `
-      <div class="det-list-title">Detections (${detections.length})</div>
-      ${detections.map((d, i) => `
-        <div class="det-item">
-          <div class="di-num">${i + 1}</div>
-          <div class="di-info">
-            <span class="di-conf">${Math.round(d.confidence * 100)}% confidence</span>
-            · ${d.size_percent.toFixed(1)}% of frame
-          </div>
-          <span class="badge dot ${severityColor(d.severity)}">${d.severity}</span>
-        </div>`).join('')}`;
-  } else {
-    detList.innerHTML = '';
-  }
+  document.getElementById('modalDetList').innerHTML = dets.length
+    ? `<div class="det-list-title">Detections (${dets.length})</div>` +
+      dets.map((d,i) => `<div class="det-item">
+        <div class="di-num">${i+1}</div>
+        <div class="di-info"><span class="di-conf">${Math.round(d.confidence*100)}% confidence</span> · ${d.size_percent.toFixed(1)}% of frame</div>
+        <span class="badge dot ${severityColor(d.severity)}">${d.severity}</span>
+      </div>`).join('')
+    : '';
 
-  overlay.classList.add('open');
+  document.getElementById('modalOverlay').classList.add('open');
   document.body.style.overflow = 'hidden';
 }
-
 function closeModal() {
   document.getElementById('modalOverlay').classList.remove('open');
   document.body.style.overflow = '';
 }
 document.getElementById('modalClose').addEventListener('click', closeModal);
-document.getElementById('modalOverlay').addEventListener('click', e => {
-  if (e.target === e.currentTarget) closeModal();
-});
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+document.getElementById('modalOverlay').addEventListener('click', e => { if (e.target===e.currentTarget) closeModal(); });
+document.addEventListener('keydown', e => { if (e.key==='Escape') closeModal(); });
 
 /* ── Map ─────────────────────────────────────────────────────────────────── */
 function initMap() {
   if (mapInstance) return;
 
-  mapInstance = L.map('map').setView([9.0820, 8.6753], 6);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors',
-    maxZoom: 19,
-  }).addTo(mapInstance);
+  // Tile layers — all free, no API key required
+  const layers = {
+    'Street':    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/">CARTO</a>',
+      subdomains: 'abcd', maxZoom: 20,
+    }),
+    'Dark':      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/">CARTO</a>',
+      subdomains: 'abcd', maxZoom: 20,
+    }),
+    'Satellite': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: '© <a href="https://www.esri.com/">Esri</a>, Maxar, Earthstar Geographics',
+      maxZoom: 19,
+    }),
+    'Terrain':   L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://opentopomap.org/">OpenTopoMap</a>',
+      maxZoom: 17,
+    }),
+  };
+
+  // Default: Dark in dark mode, Street in light mode
+  const defaultLayer = document.documentElement.dataset.theme === 'dark' ? layers['Dark'] : layers['Street'];
+  mapInstance = L.map('map', { layers: [defaultLayer] }).setView([9.0820, 8.6753], 6);
+
+  L.control.layers(layers, null, { position: 'topright', collapsed: false }).addTo(mapInstance);
 
   refreshMapMarkers();
 }
@@ -992,66 +1036,62 @@ function refreshMapMarkers() {
 
   historyCaptures.forEach(c => {
     const hasGps = c.gps_valid && (c.lat !== 0 || c.lng !== 0);
-    const lat = hasGps ? c.lat : 9.0820 + (Math.random() - 0.5) * 0.02;
-    const lng = hasGps ? c.lng : 8.6753 + (Math.random() - 0.5) * 0.02;
+    if (!hasGps) return; // Only plot captures with real GPS
 
-    const color = c.pothole_found ? '#ff4757' : '#00d4aa';
+    const isPothole = c.pothole_found;
+    const color  = isPothole ? '#ff4757' : '#00d4aa';
+    const glow   = isPothole ? 'rgba(255,71,87,.4)' : 'rgba(0,212,170,.4)';
+    const size   = isPothole ? 16 : 12;
+
     const icon = L.divIcon({
       className: '',
       html: `<div style="
-        width:14px;height:14px;border-radius:50%;
-        background:${color};border:2px solid #fff;
-        box-shadow:0 2px 8px rgba(0,0,0,.4)"></div>`,
-      iconSize: [14, 14], iconAnchor: [7, 7],
+        width:${size}px;height:${size}px;border-radius:50%;
+        background:${color};border:2.5px solid #fff;
+        box-shadow:0 0 0 4px ${glow},0 2px 8px rgba(0,0,0,.4);
+        transition:transform .15s"></div>`,
+      iconSize: [size, size], iconAnchor: [size/2, size/2],
     });
 
-    const detections = Array.isArray(c.detection_data) ? c.detection_data : [];
-    const conf = topConf(detections);
-    const sev  = topSeverity(detections);
-    const imgTag = c.image_path
-      ? `<img src="${c.image_path}" class="popup-img" />`
-      : '';
-    const gpsNote = hasGps ? '' : '<div class="popup-row">📍 GPS coming soon</div>';
+    const dets = Array.isArray(c.detection_data) ? c.detection_data : [];
+    const conf = topConf(dets), sev = topSeverity(dets);
+    const imgHtml = c.image_path ? `<img src="${c.image_path}" class="popup-img" />` : '';
+    const confRow = conf !== null ? `<div class="popup-row">Confidence: <strong>${Math.round(conf*100)}%</strong></div>` : '';
+    const sevRow  = sev ? `<div class="popup-row">Severity: <strong>${sev}</strong></div>` : '';
 
-    const popup = `
-      <div style="min-width:180px">
-        ${imgTag}
-        <div class="popup-row"><strong>${fmtDateShort(c.captured_at)}</strong></div>
-        <div class="popup-row">Potholes: <strong>${c.pothole_count || 0}</strong></div>
-        ${conf !== null ? `<div class="popup-row">Confidence: <strong>${Math.round(conf*100)}%</strong></div>` : ''}
-        ${sev ? `<div class="popup-row">Severity: <strong>${sev}</strong></div>` : ''}
-        ${gpsNote}
-      </div>`;
+    const popup = `<div class="popup-inner">
+      ${imgHtml}
+      <div class="popup-title">${fmtDateShort(c.captured_at)}</div>
+      <div class="popup-row">Potholes: <strong>${c.pothole_count||0}</strong></div>
+      ${confRow}${sevRow}
+      <div class="popup-row">GPS: <strong>${c.lat.toFixed(5)}, ${c.lng.toFixed(5)}</strong></div>
+    </div>`;
 
-    const marker = L.marker([lat, lng], { icon })
-      .addTo(mapInstance)
-      .bindPopup(popup, { maxWidth: 220 });
-    mapMarkers.push(marker);
+    mapMarkers.push(
+      L.marker([c.lat, c.lng], { icon })
+        .addTo(mapInstance)
+        .bindPopup(popup, { maxWidth: 220, offset: [0, -4] })
+    );
   });
 }
 
-/* ── Main polling loop ───────────────────────────────────────────────────── */
+/* ── Poll ────────────────────────────────────────────────────────────────── */
 async function poll() {
-  const indicator = document.getElementById('feedRefreshIndicator');
-  indicator.style.display = 'block';
-
+  const ind = document.getElementById('feedRefreshIndicator');
+  ind.style.display = 'block';
   try {
     const [latest, history] = await Promise.all([fetchLatest(), fetchHistory()]);
-    latestCapture   = latest;
-    historyCaptures = history;
-
+    latestCapture = latest; historyCaptures = history;
     updateDashboard(latest);
     updateStats();
-
-    if (document.getElementById('tab-history').classList.contains('active')) {
-      renderHistory();
-    }
+    if (document.getElementById('tab-history').classList.contains('active')) renderHistory();
     if (mapInstance) refreshMapMarkers();
   } catch (err) {
     console.error('Poll error:', err);
-    document.getElementById('statStatus').textContent = '🔴 Error';
+    document.getElementById('statStatus').innerHTML =
+      `<span class="status-dot red"></span><span>Error</span>`;
   } finally {
-    indicator.style.display = 'none';
+    ind.style.display = 'none';
   }
 }
 
@@ -1059,20 +1099,12 @@ async function poll() {
 (async () => {
   await poll();
   setInterval(poll, REFRESH_MS);
-
-  // Unlock AudioContext on first user interaction
   document.addEventListener('click', () => {
-    if (!audioCtx) {
-      try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
-      catch (_) {}
-    }
+    if (!audioCtx) try { audioCtx = new (window.AudioContext||window.webkitAudioContext)(); } catch(_){}
   }, { once: true });
 })();
 
-/* ── Service Worker ──────────────────────────────────────────────────────── */
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
-}
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
 </html>
