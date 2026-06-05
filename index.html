@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PotholeWatch — Real-time Detection</title>
+  <meta name="description" content="AI-powered pothole detection system with real-time drone monitoring" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#00d4aa" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+  <style>
+    /* ── Reset & Tokens ─────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:        #0a0a0f;
+      --card:      #16161e;
+      --border:    #2a2a3e;
+      --surface:   #1e1e2e;
+      --green:     #00d4aa;
+      --red:       #ff4757;
+      --yellow:    #ffa502;
+      --blue:      #4e9eff;
+      --text:      #e8e8f0;
+      --muted:     #7a7a9a;
+      --dim:       #4a4a6a;
+      --radius:    12px;
+      --radius-sm: 8px;
+      --shadow:    0 4px 24px rgba(0,0,0,.4);
+      --shadow-lg: 0 12px 48px rgba(0,0,0,.6);
+      --nav-h:     64px;
+      --stats-h:   72px;
+      --transition: .2s cubic-bezier(.4,0,.2,1);
+    }
+    [data-theme="light"] {
+      --bg:      #f8f9fc;
+      --card:    #ffffff;
+      --border:  #e2e8f0;
+      --surface: #f1f5f9;
+      --text:    #1a1a2e;
+      --muted:   #64748b;
+      --dim:     #94a3b8;
+      --shadow:  0 4px 24px rgba(0,0,0,.08);
+      --shadow-lg: 0 12px 48px rgba(0,0,0,.16);
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      transition: background var(--transition), color var(--transition);
+      overflow-x: hidden;
+    }
+
+    /* ── Scrollbar ─────────────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--dim); border-radius: 99px; }
+
+    /* ── Navbar ────────────────────────────────────────────────────────── */
+    .nav {
+      position: sticky; top: 0; z-index: 100;
+      height: var(--nav-h);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px;
+      background: rgba(10,10,15,.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      transition: background var(--transition), border-color var(--transition);
+    }
+    [data-theme="light"] .nav { background: rgba(248,249,252,.85); }
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 700; font-size: 18px; letter-spacing: -.3px;
+    }
+    .nav-logo .icon {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--green), var(--blue));
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+    .nav-right { display: flex; align-items: center; gap: 16px; }
+    .live-badge {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 12px;
+      border-radius: 99px;
+      background: rgba(0,212,170,.12);
+      border: 1px solid rgba(0,212,170,.3);
+      font-size: 12px; font-weight: 600; color: var(--green);
+      letter-spacing: .5px;
+    }
+    .live-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 0 0 rgba(0,212,170,.5);
+      animation: pulse-dot 1.8s infinite;
+    }
+    @keyframes pulse-dot {
+      0%   { box-shadow: 0 0 0 0   rgba(0,212,170,.5); }
+      60%  { box-shadow: 0 0 0 8px rgba(0,212,170,0);  }
+      100% { box-shadow: 0 0 0 0   rgba(0,212,170,0);  }
+    }
+    .theme-btn {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text); font-size: 17px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: all var(--transition);
+    }
+    .theme-btn:hover { background: var(--border); transform: scale(1.08); }
+
+    /* ── Stats bar ─────────────────────────────────────────────────────── */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .stat {
+      background: var(--card);
+      padding: 14px 20px;
+      display: flex; align-items: center; gap: 12px;
+      transition: background var(--transition);
+    }
+    .stat-icon {
+      width: 38px; height: 38px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center; font-size: 18px;
+      flex-shrink: 0;
+    }
+    .stat-icon.green  { background: rgba(0,212,170,.12); }
+    .stat-icon.red    { background: rgba(255,71,87,.12); }
+    .stat-icon.blue   { background: rgba(78,158,255,.12); }
+    .stat-icon.yellow { background: rgba(255,165,2,.12); }
+    .stat-body { min-width: 0; }
+    .stat-val { font-size: 22px; font-weight: 700; line-height: 1.1; }
+    .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase;
+                  letter-spacing: .6px; margin-top: 2px; }
+    @media (max-width: 640px) {
+      .stats-bar { grid-template-columns: repeat(2, 1fr); }
+      .stat { padding: 12px 14px; }
+      .stat-val { font-size: 18px; }
+    }
+
+    /* ── Tabs ──────────────────────────────────────────────────────────── */
+    .tab-bar {
+      display: flex; gap: 4px;
+      padding: 16px 24px 0;
+      border-bottom: 1px solid var(--border);
+      background: var(--card);
+    }
+    .tab-btn {
+      padding: 9px 20px; border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+      border: none; background: none;
+      color: var(--muted); font-size: 14px; font-weight: 500;
+      cursor: pointer; transition: all var(--transition);
+      display: flex; align-items: center; gap: 7px;
+      border-bottom: 2px solid transparent; margin-bottom: -1px;
+    }
+    .tab-btn:hover { color: var(--text); background: var(--surface); }
+    .tab-btn.active {
+      color: var(--green); border-bottom-color: var(--green);
+      background: var(--surface);
+    }
+    .tab-pane { display: none; padding: 24px; }
+    .tab-pane.active { display: block; }
+
+    /* ── Alert banner ──────────────────────────────────────────────────── */
+    .alert-banner {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 20px; border-radius: var(--radius);
+      margin-bottom: 20px; font-weight: 600; font-size: 15px;
+      transition: all .4s cubic-bezier(.4,0,.2,1);
+      border: 1px solid transparent;
+    }
+    .alert-banner.pothole {
+      background: rgba(255,71,87,.1);
+      border-color: rgba(255,71,87,.4);
+      color: var(--red);
+      animation: alert-shake .4s ease;
+    }
+    .alert-banner.clear {
+      background: rgba(0,212,170,.08);
+      border-color: rgba(0,212,170,.3);
+      color: var(--green);
+    }
+    @keyframes alert-shake {
+      0%,100% { transform: translateX(0); }
+      20%      { transform: translateX(-6px); }
+      40%      { transform: translateX(6px); }
+      60%      { transform: translateX(-4px); }
+      80%      { transform: translateX(4px); }
+    }
+    .alert-icon { font-size: 22px; }
+
+    /* ── Dashboard grid ────────────────────────────────────────────────── */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 900px) { .dashboard-grid { grid-template-columns: 1fr; } }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: background var(--transition), border-color var(--transition);
+    }
+    .panel-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .panel-title { font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+    .panel-body { padding: 20px; }
+
+    /* ── Image / Canvas ────────────────────────────────────────────────── */
+    .img-wrap {
+      position: relative; border-radius: var(--radius-sm); overflow: hidden;
+      background: var(--surface); aspect-ratio: 4/3;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .img-wrap img, .img-wrap canvas {
+      width: 100%; height: 100%; object-fit: contain;
+      position: absolute; top: 0; left: 0;
+    }
+    .img-placeholder {
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      color: var(--dim); font-size: 13px;
+    }
+    .img-placeholder .ph-icon { font-size: 36px; opacity: .4; }
+    .img-meta {
+      margin-top: 12px; display: flex; align-items: center;
+      justify-content: space-between; font-size: 12px; color: var(--muted);
+    }
+
+    /* ── Detection stats ───────────────────────────────────────────────── */
+    .det-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px;
+    }
+    .det-stat {
+      background: var(--surface); border-radius: var(--radius-sm);
+      padding: 14px 16px; border: 1px solid var(--border);
+    }
+    .det-stat-val { font-size: 26px; font-weight: 700; line-height: 1; }
+    .det-stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase;
+                      letter-spacing: .5px; margin-top: 4px; }
+
+    /* ── Badges ────────────────────────────────────────────────────────── */
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 10px; border-radius: 99px;
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+    .badge.green  { background: rgba(0,212,170,.15);  color: var(--green); }
+    .badge.red    { background: rgba(255,71,87,.15);  color: var(--red);   }
+    .badge.yellow { background: rgba(255,165,2,.15);  color: var(--yellow);}
+    .badge.blue   { background: rgba(78,158,255,.15); color: var(--blue);  }
+    .badge.dot::before { content: ''; width: 6px; height: 6px; border-radius: 50%;
+                         background: currentColor; }
+
+    /* ── History cards ─────────────────────────────────────────────────── */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px;
+    }
+    .capture-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+      cursor: pointer; transition: all var(--transition);
+    }
+    .capture-card:hover {
+      border-color: var(--green); transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(0,212,170,.12);
+    }
+    .capture-card .thumb {
+      aspect-ratio: 16/10; overflow: hidden; background: var(--surface);
+      position: relative;
+    }
+    .capture-card .thumb img {
+      width: 100%; height: 100%; object-fit: cover;
+      transition: transform .3s ease;
+    }
+    .capture-card:hover .thumb img { transform: scale(1.04); }
+    .capture-card .thumb .card-badge {
+      position: absolute; top: 8px; right: 8px;
+    }
+    .capture-card .card-body { padding: 14px; }
+    .capture-card .card-time { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+    .capture-card .card-stats {
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 12px;
+    }
+    .capture-card .card-conf { color: var(--muted); }
+    .no-results { text-align: center; color: var(--muted); padding: 60px 0; font-size: 14px; }
+
+    /* ── Modal ─────────────────────────────────────────────────────────── */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,.75); backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+      opacity: 0; pointer-events: none; transition: opacity var(--transition);
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); max-width: 800px; width: 100%;
+      max-height: 90dvh; overflow-y: auto;
+      transform: translateY(20px); transition: transform var(--transition);
+      box-shadow: var(--shadow-lg);
+    }
+    .modal-overlay.open .modal { transform: translateY(0); }
+    .modal-header {
+      padding: 18px 24px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; background: var(--card); z-index: 1;
+    }
+    .modal-title { font-weight: 700; font-size: 16px; }
+    .modal-close {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--muted); font-size: 18px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: all var(--transition); line-height: 1;
+    }
+    .modal-close:hover { background: var(--red); color: #fff; border-color: var(--red); }
+    .modal-body { padding: 24px; }
+    .modal-img-wrap {
+      position: relative; border-radius: var(--radius-sm); overflow: hidden;
+      background: var(--surface); aspect-ratio: 4/3; margin-bottom: 20px;
+    }
+    .modal-img-wrap img, .modal-img-wrap canvas {
+      width: 100%; height: 100%; object-fit: contain;
+      position: absolute; top: 0; left: 0;
+    }
+    .modal-meta-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+    }
+    .modal-meta-item {
+      background: var(--surface); border-radius: var(--radius-sm);
+      padding: 12px 14px; border: 1px solid var(--border);
+    }
+    .modal-meta-item .m-label { font-size: 10px; color: var(--muted);
+                                text-transform: uppercase; letter-spacing: .6px; }
+    .modal-meta-item .m-val { font-size: 16px; font-weight: 600; margin-top: 4px; }
+    .det-list { margin-top: 20px; }
+    .det-list-title { font-size: 13px; font-weight: 600; color: var(--muted);
+                      text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; }
+    .det-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 14px; background: var(--surface);
+      border-radius: var(--radius-sm); border: 1px solid var(--border);
+      margin-bottom: 8px; font-size: 13px;
+    }
+    .det-item .di-num {
+      width: 24px; height: 24px; border-radius: 50%;
+      background: var(--blue); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; flex-shrink: 0;
+    }
+    .det-item .di-info { flex: 1; min-width: 0; }
+    .det-item .di-conf { font-weight: 700; }
+
+    /* ── Map ───────────────────────────────────────────────────────────── */
+    #map {
+      height: 560px; border-radius: var(--radius);
+      border: 1px solid var(--border); overflow: hidden;
+    }
+    .leaflet-popup-content-wrapper {
+      background: var(--card) !important; color: var(--text) !important;
+      border: 1px solid var(--border) !important; border-radius: var(--radius) !important;
+      box-shadow: var(--shadow) !important;
+    }
+    .leaflet-popup-tip { background: var(--card) !important; }
+    .popup-img { width: 100%; height: 100px; object-fit: cover;
+                 border-radius: 6px; margin-bottom: 8px; }
+    .popup-row { font-size: 12px; color: var(--muted); margin-bottom: 3px; }
+    .popup-row strong { color: var(--text); }
+
+    /* ── Refresh spinner ───────────────────────────────────────────────── */
+    .refresh-ring {
+      width: 16px; height: 16px; border-radius: 50%;
+      border: 2px solid var(--border); border-top-color: var(--green);
+      animation: spin .8s linear infinite; display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .refreshing .refresh-ring { display: inline-block; }
+
+    /* ── Utility ───────────────────────────────────────────────────────── */
+    .flex { display: flex; }
+    .items-center { align-items: center; }
+    .gap-8 { gap: 8px; }
+    .gap-12 { gap: 12px; }
+    .text-muted { color: var(--muted); }
+    .text-sm { font-size: 13px; }
+    .mt-4 { margin-top: 16px; }
+    .fw-600 { font-weight: 600; }
+    .w-full { width: 100%; }
+
+    /* ── Loading skeleton ──────────────────────────────────────────────── */
+    .skeleton {
+      background: linear-gradient(90deg, var(--surface) 25%, var(--border) 50%, var(--surface) 75%);
+      background-size: 200% 100%;
+      animation: skeleton-anim 1.5s infinite;
+      border-radius: 6px;
+    }
+    @keyframes skeleton-anim { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+    /* ── Responsive nav ────────────────────────────────────────────────── */
+    @media (max-width: 480px) {
+      .nav { padding: 0 16px; }
+      .tab-pane { padding: 16px; }
+      .panel-body { padding: 14px; }
+      .card-grid { grid-template-columns: 1fr 1fr; }
+      .nav-logo span { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Navbar ──────────────────────────────────────────────────────────────── -->
+<nav class="nav">
+  <div class="nav-logo">
+    <div class="icon">🛣️</div>
+    <span>PotholeWatch</span>
+  </div>
+  <div class="nav-right">
+    <div class="live-badge">
+      <div class="live-dot"></div>
+      <span>LIVE</span>
+    </div>
+    <button class="theme-btn" id="themeBtn" title="Toggle theme">🌙</button>
+  </div>
+</nav>
+
+<!-- ── Stats bar ───────────────────────────────────────────────────────────── -->
+<div class="stats-bar">
+  <div class="stat">
+    <div class="stat-icon blue">📸</div>
+    <div class="stat-body">
+      <div class="stat-val" id="statCaptures">—</div>
+      <div class="stat-label">Captures Today</div>
+    </div>
+  </div>
+  <div class="stat">
+    <div class="stat-icon red">⚠️</div>
+    <div class="stat-body">
+      <div class="stat-val" id="statPotholes">—</div>
+      <div class="stat-label">Potholes Today</div>
+    </div>
+  </div>
+  <div class="stat">
+    <div class="stat-icon green">🎯</div>
+    <div class="stat-body">
+      <div class="stat-val" id="statConf">—</div>
+      <div class="stat-label">Avg Confidence</div>
+    </div>
+  </div>
+  <div class="stat">
+    <div class="stat-icon yellow">⚡</div>
+    <div class="stat-body">
+      <div class="stat-val" id="statStatus" style="font-size:14px;padding-top:4px">Loading…</div>
+      <div class="stat-label">System Status</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Tabs ────────────────────────────────────────────────────────────────── -->
+<div class="tab-bar">
+  <button class="tab-btn active" data-tab="dashboard">📡 Dashboard</button>
+  <button class="tab-btn" data-tab="history">📋 History</button>
+  <button class="tab-btn" data-tab="map">🗺️ Map</button>
+</div>
+
+<!-- ── DASHBOARD ───────────────────────────────────────────────────────────── -->
+<div class="tab-pane active" id="tab-dashboard">
+  <!-- Alert -->
+  <div class="alert-banner clear" id="alertBanner">
+    <span class="alert-icon">✅</span>
+    <span id="alertText">Waiting for first capture…</span>
+  </div>
+
+  <div class="dashboard-grid">
+    <!-- Live Feed -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">📡 Live Feed</div>
+        <div id="feedRefreshIndicator" style="display:none">
+          <span class="refresh-ring"></span>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="img-wrap" id="feedWrap">
+          <div class="img-placeholder">
+            <div class="ph-icon">📷</div>
+            <div>Waiting for drone feed…</div>
+          </div>
+          <img id="feedImg" src="" alt="Live feed" style="display:none" />
+        </div>
+        <div class="img-meta">
+          <span id="feedFilename" class="text-muted text-sm">—</span>
+          <span id="feedTime" class="text-muted text-sm">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Detection Result -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">🔍 Detection Result</div>
+        <div id="detBadgeWrap"></div>
+      </div>
+      <div class="panel-body">
+        <div class="img-wrap" id="detWrap">
+          <div class="img-placeholder">
+            <div class="ph-icon">🤖</div>
+            <div>No detection yet…</div>
+          </div>
+          <img id="detImg" src="" alt="Detection" style="display:none" />
+          <canvas id="detCanvas" style="display:none"></canvas>
+        </div>
+        <div class="det-grid">
+          <div class="det-stat">
+            <div class="det-stat-val" id="detCount" style="color:var(--blue)">—</div>
+            <div class="det-stat-label">Potholes Found</div>
+          </div>
+          <div class="det-stat">
+            <div class="det-stat-val" id="detConf" style="color:var(--green)">—</div>
+            <div class="det-stat-label">Top Confidence</div>
+          </div>
+          <div class="det-stat">
+            <div class="det-stat-val" id="detSeverity" style="color:var(--yellow)">—</div>
+            <div class="det-stat-label">Max Severity</div>
+          </div>
+          <div class="det-stat">
+            <div class="det-stat-val" id="detSize" style="color:var(--muted)">—</div>
+            <div class="det-stat-label">Max Size %</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── HISTORY ─────────────────────────────────────────────────────────────── -->
+<div class="tab-pane" id="tab-history">
+  <div id="historyGrid" class="card-grid">
+    <div style="color:var(--muted);grid-column:1/-1;text-align:center;padding:40px 0">Loading history…</div>
+  </div>
+</div>
+
+<!-- ── MAP ─────────────────────────────────────────────────────────────────── -->
+<div class="tab-pane" id="tab-map">
+  <div id="map"></div>
+</div>
+
+<!-- ── Modal ───────────────────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">Capture Detail</div>
+      <button class="modal-close" id="modalClose">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-img-wrap">
+        <img id="modalImg" src="" alt="" />
+        <canvas id="modalCanvas"></canvas>
+      </div>
+      <div class="modal-meta-grid" id="modalMeta"></div>
+      <div class="det-list" id="modalDetList"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── Config ──────────────────────────────────────────────────────────────── */
+const SB_URL  = 'https://sbzbojblnmygvofzxrgo.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNiemJvamJsbm15Z3ZvZnp4cmdvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MDA1MDYsImV4cCI6MjA5NDI3NjUwNn0.L556N_O3VWS9lS5H_G4f3hINmFq9PUi4SzQRtH28ATQ';
+const SB_HDRS = { apikey: SB_ANON, Authorization: `Bearer ${SB_ANON}` };
+const REFRESH_MS = 5000;
+
+/* ── State ───────────────────────────────────────────────────────────────── */
+let latestCapture   = null;
+let historyCaptures = [];
+let mapInstance     = null;
+let mapMarkers      = [];
+let audioCtx        = null;
+let lastAlertId     = null;
+
+/* ── Theme ───────────────────────────────────────────────────────────────── */
+const themeBtn = document.getElementById('themeBtn');
+const savedTheme = localStorage.getItem('pw-theme') || 'dark';
+document.documentElement.dataset.theme = savedTheme;
+themeBtn.textContent = savedTheme === 'dark' ? '🌙' : '☀️';
+
+themeBtn.addEventListener('click', () => {
+  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = next;
+  localStorage.setItem('pw-theme', next);
+  themeBtn.textContent = next === 'dark' ? '🌙' : '☀️';
+  if (mapInstance) {
+    setTimeout(() => mapInstance.invalidateSize(), 300);
+  }
+});
+
+/* ── Tabs ────────────────────────────────────────────────────────────────── */
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+
+    if (btn.dataset.tab === 'map') {
+      initMap();
+      setTimeout(() => mapInstance && mapInstance.invalidateSize(), 200);
+    }
+    if (btn.dataset.tab === 'history') renderHistory();
+  });
+});
+
+/* ── Supabase fetch helpers ──────────────────────────────────────────────── */
+async function sbFetch(path) {
+  const r = await fetch(`${SB_URL}${path}`, { headers: SB_HDRS });
+  if (!r.ok) throw new Error(`Supabase ${r.status}: ${r.statusText}`);
+  return r.json();
+}
+
+async function fetchLatest() {
+  const data = await sbFetch('/rest/v1/captures?select=*&order=captured_at.desc&limit=1');
+  return data[0] || null;
+}
+
+async function fetchHistory() {
+  return sbFetch('/rest/v1/captures?select=*&order=captured_at.desc&limit=50');
+}
+
+/* ── Date formatting ─────────────────────────────────────────────────────── */
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleString(undefined, {
+    month: 'short', day: 'numeric',
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
+  });
+}
+function fmtDateShort(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+function isToday(iso) {
+  if (!iso) return false;
+  const d = new Date(iso), n = new Date();
+  return d.getFullYear() === n.getFullYear() &&
+         d.getMonth()    === n.getMonth()    &&
+         d.getDate()     === n.getDate();
+}
+
+/* ── Severity helpers ────────────────────────────────────────────────────── */
+function severityColor(s) {
+  return s === 'Large' ? 'red' : s === 'Medium' ? 'yellow' : 'green';
+}
+function topSeverity(detections) {
+  if (!detections || !detections.length) return null;
+  const order = { Large: 3, Medium: 2, Small: 1 };
+  return detections.reduce((a, b) =>
+    (order[b.severity] || 0) > (order[a.severity] || 0) ? b : a
+  ).severity;
+}
+function topConf(detections) {
+  if (!detections || !detections.length) return null;
+  return Math.max(...detections.map(d => d.confidence));
+}
+
+/* ── Web Audio beep ──────────────────────────────────────────────────────── */
+function beep() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+    osc.frequency.setValueAtTime(660, audioCtx.currentTime + 0.1);
+    gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + 0.4);
+  } catch (_) {}
+}
+
+/* ── Canvas bounding boxes ───────────────────────────────────────────────── */
+function drawBoxes(canvas, img, detections) {
+  if (!detections || !detections.length) return;
+  const dpr = window.devicePixelRatio || 1;
+  const rect = img.getBoundingClientRect();
+  const displayW = rect.width || img.offsetWidth;
+  const displayH = rect.height || img.offsetHeight;
+
+  canvas.style.width  = displayW + 'px';
+  canvas.style.height = displayH + 'px';
+  canvas.width  = displayW * dpr;
+  canvas.height = displayH * dpr;
+  canvas.style.display = 'block';
+
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const naturalW = img.naturalWidth  || 640;
+  const naturalH = img.naturalHeight || 480;
+  const scaleX = displayW / naturalW;
+  const scaleY = displayH / naturalH;
+
+  const colors = { Large: '#ff4757', Medium: '#ffa502', Small: '#00d4aa' };
+
+  detections.forEach((det, i) => {
+    const { x1, y1, x2, y2 } = det.bbox;
+    const sx = x1 * scaleX, sy = y1 * scaleY;
+    const sw = (x2 - x1) * scaleX, sh = (y2 - y1) * scaleY;
+    const col = colors[det.severity] || '#4e9eff';
+    const conf = Math.round(det.confidence * 100);
+
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 2.5;
+    ctx.strokeRect(sx, sy, sw, sh);
+
+    ctx.fillStyle = col;
+    const label = `#${i + 1} ${det.severity} ${conf}%`;
+    const fontSize = Math.max(10, Math.min(14, displayW / 50));
+    ctx.font = `bold ${fontSize}px system-ui, sans-serif`;
+    const textW = ctx.measureText(label).width + 10;
+    const labelH = fontSize + 10;
+    const lx = sx, ly = sy - labelH < 0 ? sy : sy - labelH;
+    ctx.fillRect(lx, ly, textW, labelH);
+    ctx.fillStyle = '#fff';
+    ctx.fillText(label, lx + 5, ly + labelH - 5);
+  });
+}
+
+/* ── Stats bar update ────────────────────────────────────────────────────── */
+function updateStats() {
+  const today = historyCaptures.filter(c => isToday(c.captured_at));
+  const potholeCaptures = today.filter(c => c.pothole_found);
+  const allDetections = historyCaptures.flatMap(c =>
+    Array.isArray(c.detection_data) ? c.detection_data : []
+  );
+  const avgConf = allDetections.length
+    ? Math.round(allDetections.reduce((s, d) => s + d.confidence, 0) / allDetections.length * 100)
+    : null;
+
+  document.getElementById('statCaptures').textContent = today.length;
+  document.getElementById('statPotholes').textContent = potholeCaptures.length;
+  document.getElementById('statConf').textContent = avgConf !== null ? avgConf + '%' : '—';
+  document.getElementById('statStatus').textContent = latestCapture ? '🟢 Active' : '🟡 Waiting';
+}
+
+/* ── Alert banner ────────────────────────────────────────────────────────── */
+function updateAlert(capture) {
+  const banner = document.getElementById('alertBanner');
+  const text   = document.getElementById('alertText');
+  if (!capture) return;
+
+  const isNew = capture.id !== lastAlertId;
+
+  if (capture.pothole_found) {
+    const cnt = capture.pothole_count || 0;
+    const sev = topSeverity(capture.detection_data) || 'Unknown';
+    banner.className = 'alert-banner pothole';
+    text.textContent = `⚠️ ${cnt} pothole${cnt !== 1 ? 's' : ''} detected! Severity: ${sev}`;
+    if (isNew) beep();
+  } else if (capture.processed) {
+    banner.className = 'alert-banner clear';
+    text.textContent = '✅ Road surface clear — no potholes detected';
+  } else {
+    banner.className = 'alert-banner clear';
+    text.textContent = '🔄 Processing image…';
+  }
+  lastAlertId = capture.id;
+}
+
+/* ── Dashboard live feed ─────────────────────────────────────────────────── */
+function updateDashboard(capture) {
+  if (!capture) return;
+
+  const feedImg    = document.getElementById('feedImg');
+  const detImg     = document.getElementById('detImg');
+  const detCanvas  = document.getElementById('detCanvas');
+  const feedWrap   = document.getElementById('feedWrap');
+  const detWrap    = document.getElementById('detWrap');
+
+  const imgUrl = capture.image_path;
+
+  if (imgUrl) {
+    feedImg.onload = () => {
+      feedWrap.querySelector('.img-placeholder') &&
+        feedWrap.querySelector('.img-placeholder').remove?.();
+    };
+    if (feedImg.src !== imgUrl) feedImg.src = imgUrl;
+    feedImg.style.display = 'block';
+
+    detImg.onload = () => {
+      const detections = Array.isArray(capture.detection_data)
+        ? capture.detection_data : [];
+      detCanvas.style.display = detections.length ? 'block' : 'none';
+      if (detections.length) drawBoxes(detCanvas, detImg, detections);
+      else { const c = detCanvas.getContext('2d'); c.clearRect(0,0,detCanvas.width,detCanvas.height); }
+    };
+    if (detImg.src !== imgUrl) detImg.src = imgUrl;
+    detImg.style.display = 'block';
+  }
+
+  document.getElementById('feedFilename').textContent = capture.filename || '—';
+  document.getElementById('feedTime').textContent = fmtDate(capture.captured_at);
+
+  const detections = Array.isArray(capture.detection_data) ? capture.detection_data : [];
+  const cnt  = capture.pothole_count || 0;
+  const conf = topConf(detections);
+  const sev  = topSeverity(detections);
+  const maxSize = detections.length
+    ? Math.max(...detections.map(d => d.size_percent)).toFixed(1) + '%'
+    : '—';
+
+  document.getElementById('detCount').textContent = cnt;
+  document.getElementById('detConf').textContent  = conf !== null ? Math.round(conf * 100) + '%' : '—';
+  document.getElementById('detSeverity').textContent = sev || '—';
+  document.getElementById('detSize').textContent  = maxSize;
+
+  const badgeWrap = document.getElementById('detBadgeWrap');
+  if (capture.pothole_found && sev) {
+    badgeWrap.innerHTML = `<span class="badge dot ${severityColor(sev)}">${sev}</span>`;
+  } else if (capture.processed) {
+    badgeWrap.innerHTML = `<span class="badge dot green">Clear</span>`;
+  } else {
+    badgeWrap.innerHTML = `<span class="badge dot blue">Processing</span>`;
+  }
+
+  updateAlert(capture);
+}
+
+/* ── History rendering ───────────────────────────────────────────────────── */
+function renderHistory() {
+  const grid = document.getElementById('historyGrid');
+  if (!historyCaptures.length) {
+    grid.innerHTML = '<div class="no-results">📭 No captures yet</div>';
+    return;
+  }
+  grid.innerHTML = historyCaptures.map((c, i) => {
+    const detections = Array.isArray(c.detection_data) ? c.detection_data : [];
+    const conf = topConf(detections);
+    const sev  = topSeverity(detections);
+    const badge = c.pothole_found
+      ? `<span class="badge dot ${severityColor(sev || 'Small')}">${sev || 'Found'}</span>`
+      : c.processed
+        ? `<span class="badge dot green">Clear</span>`
+        : `<span class="badge dot blue">Processing</span>`;
+    const imgTag = c.image_path
+      ? `<img src="${c.image_path}" alt="" loading="lazy" />`
+      : `<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--dim)">No image</div>`;
+
+    return `
+      <div class="capture-card" data-idx="${i}">
+        <div class="thumb">
+          ${imgTag}
+          <div class="card-badge">${badge}</div>
+        </div>
+        <div class="card-body">
+          <div class="card-time">${fmtDateShort(c.captured_at)}</div>
+          <div class="card-stats">
+            <span class="card-conf">${conf !== null ? Math.round(conf * 100) + '% conf' : 'No detection'}</span>
+            <span class="badge ${c.pothole_found ? 'red' : 'green'}" style="font-size:10px">
+              ${c.pothole_count || 0} found
+            </span>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  grid.querySelectorAll('.capture-card').forEach(card => {
+    card.addEventListener('click', () => openModal(historyCaptures[+card.dataset.idx]));
+  });
+}
+
+/* ── Modal ───────────────────────────────────────────────────────────────── */
+function openModal(capture) {
+  const overlay  = document.getElementById('modalOverlay');
+  const modalImg = document.getElementById('modalImg');
+  const modalCvs = document.getElementById('modalCanvas');
+  const meta     = document.getElementById('modalMeta');
+  const detList  = document.getElementById('modalDetList');
+
+  document.getElementById('modalTitle').textContent =
+    capture.filename || `Capture ${capture.id}`;
+
+  if (capture.image_path) {
+    modalImg.src = capture.image_path;
+    modalImg.onload = () => {
+      const detections = Array.isArray(capture.detection_data) ? capture.detection_data : [];
+      if (detections.length) {
+        modalCvs.style.display = 'block';
+        drawBoxes(modalCvs, modalImg, detections);
+      } else {
+        modalCvs.style.display = 'none';
+        const c = modalCvs.getContext('2d');
+        c.clearRect(0, 0, modalCvs.width, modalCvs.height);
+      }
+    };
+  } else {
+    modalImg.src = '';
+    modalCvs.style.display = 'none';
+  }
+
+  const detections = Array.isArray(capture.detection_data) ? capture.detection_data : [];
+  const conf = topConf(detections);
+  const sev  = topSeverity(detections);
+  const gpsValid = capture.gps_valid && (capture.lat !== 0 || capture.lng !== 0);
+
+  meta.innerHTML = [
+    { label: 'Timestamp', val: fmtDate(capture.captured_at) },
+    { label: 'Potholes', val: capture.pothole_count || 0 },
+    { label: 'Confidence', val: conf !== null ? Math.round(conf * 100) + '%' : '—' },
+    { label: 'Severity', val: sev || (capture.processed ? 'None' : 'Processing') },
+    { label: 'Latitude',  val: gpsValid ? capture.lat.toFixed(6) : 'GPS coming soon' },
+    { label: 'Longitude', val: gpsValid ? capture.lng.toFixed(6) : 'GPS coming soon' },
+    { label: 'GPS Accuracy', val: capture.gps_accuracy ? capture.gps_accuracy.toFixed(1) + 'm' : '—' },
+    { label: 'Processed', val: capture.processed ? 'Yes' : 'No' },
+  ].map(({ label, val }) => `
+    <div class="modal-meta-item">
+      <div class="m-label">${label}</div>
+      <div class="m-val">${val}</div>
+    </div>`).join('');
+
+  if (detections.length) {
+    detList.innerHTML = `
+      <div class="det-list-title">Detections (${detections.length})</div>
+      ${detections.map((d, i) => `
+        <div class="det-item">
+          <div class="di-num">${i + 1}</div>
+          <div class="di-info">
+            <span class="di-conf">${Math.round(d.confidence * 100)}% confidence</span>
+            · ${d.size_percent.toFixed(1)}% of frame
+          </div>
+          <span class="badge dot ${severityColor(d.severity)}">${d.severity}</span>
+        </div>`).join('')}`;
+  } else {
+    detList.innerHTML = '';
+  }
+
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.getElementById('modalClose').addEventListener('click', closeModal);
+document.getElementById('modalOverlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+/* ── Map ─────────────────────────────────────────────────────────────────── */
+function initMap() {
+  if (mapInstance) return;
+
+  mapInstance = L.map('map').setView([9.0820, 8.6753], 6);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors',
+    maxZoom: 19,
+  }).addTo(mapInstance);
+
+  refreshMapMarkers();
+}
+
+function refreshMapMarkers() {
+  if (!mapInstance) return;
+  mapMarkers.forEach(m => m.remove());
+  mapMarkers = [];
+
+  historyCaptures.forEach(c => {
+    const hasGps = c.gps_valid && (c.lat !== 0 || c.lng !== 0);
+    const lat = hasGps ? c.lat : 9.0820 + (Math.random() - 0.5) * 0.02;
+    const lng = hasGps ? c.lng : 8.6753 + (Math.random() - 0.5) * 0.02;
+
+    const color = c.pothole_found ? '#ff4757' : '#00d4aa';
+    const icon = L.divIcon({
+      className: '',
+      html: `<div style="
+        width:14px;height:14px;border-radius:50%;
+        background:${color};border:2px solid #fff;
+        box-shadow:0 2px 8px rgba(0,0,0,.4)"></div>`,
+      iconSize: [14, 14], iconAnchor: [7, 7],
+    });
+
+    const detections = Array.isArray(c.detection_data) ? c.detection_data : [];
+    const conf = topConf(detections);
+    const sev  = topSeverity(detections);
+    const imgTag = c.image_path
+      ? `<img src="${c.image_path}" class="popup-img" />`
+      : '';
+    const gpsNote = hasGps ? '' : '<div class="popup-row">📍 GPS coming soon</div>';
+
+    const popup = `
+      <div style="min-width:180px">
+        ${imgTag}
+        <div class="popup-row"><strong>${fmtDateShort(c.captured_at)}</strong></div>
+        <div class="popup-row">Potholes: <strong>${c.pothole_count || 0}</strong></div>
+        ${conf !== null ? `<div class="popup-row">Confidence: <strong>${Math.round(conf*100)}%</strong></div>` : ''}
+        ${sev ? `<div class="popup-row">Severity: <strong>${sev}</strong></div>` : ''}
+        ${gpsNote}
+      </div>`;
+
+    const marker = L.marker([lat, lng], { icon })
+      .addTo(mapInstance)
+      .bindPopup(popup, { maxWidth: 220 });
+    mapMarkers.push(marker);
+  });
+}
+
+/* ── Main polling loop ───────────────────────────────────────────────────── */
+async function poll() {
+  const indicator = document.getElementById('feedRefreshIndicator');
+  indicator.style.display = 'block';
+
+  try {
+    const [latest, history] = await Promise.all([fetchLatest(), fetchHistory()]);
+    latestCapture   = latest;
+    historyCaptures = history;
+
+    updateDashboard(latest);
+    updateStats();
+
+    if (document.getElementById('tab-history').classList.contains('active')) {
+      renderHistory();
+    }
+    if (mapInstance) refreshMapMarkers();
+  } catch (err) {
+    console.error('Poll error:', err);
+    document.getElementById('statStatus').textContent = '🔴 Error';
+  } finally {
+    indicator.style.display = 'none';
+  }
+}
+
+/* ── Boot ────────────────────────────────────────────────────────────────── */
+(async () => {
+  await poll();
+  setInterval(poll, REFRESH_MS);
+
+  // Unlock AudioContext on first user interaction
+  document.addEventListener('click', () => {
+    if (!audioCtx) {
+      try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+      catch (_) {}
+    }
+  }, { once: true });
+})();
+
+/* ── Service Worker ──────────────────────────────────────────────────────── */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
